@@ -20,6 +20,25 @@
             android:ems="10"
             android:textSize="30sp" />
 
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/radioPlus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked"
+                android:text="@string/plus" />
+
+            <RadioButton
+                android:id="@+id/radioMult"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked"
+                android:text="@string/mult" />
+        </RadioGroup>
+
 
         <EditText
             android:id="@+id/number2"
