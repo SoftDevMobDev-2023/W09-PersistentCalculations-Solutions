@@ -8,10 +8,21 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.TextView
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.activity.viewModels
+import androidx.lifecycle.Observer
 
 class MainActivity : AppCompatActivity() {
     var opResult: Int = 0
     var operator = "plus"
+    private val viewModel: NumbersViewModel by viewModels()
+    private val scope = CoroutineScope(Job() + Dispatchers.Main)
+
 
     override fun onStart() {
         super.onStart()
@@ -25,6 +36,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+
+        val store = KeyStore(baseContext)
+        scope.launch {
+            store.saveNumbers(viewModel.num1.value, viewModel.num2.value)
+        }
+
         Log.i("LIFECYCLE", "onPause")
     }
 
@@ -51,6 +68,29 @@ class MainActivity : AppCompatActivity() {
         val number2 = findViewById<EditText>(R.id.number2)
         val answer = findViewById<TextView>(R.id.answer)
 
+        val store = KeyStore(baseContext)
+        scope.launch {
+            store.getLastNumber1.collect { number ->
+                viewModel.num1.postValue(number)
+            }
+        }
+        scope.launch {
+            store.getLastNumber2.collect { number ->
+                viewModel.num2.postValue(number)
+            }
+        }
+
+        val n1Observer = Observer<Int> { state ->
+            number1.setText(state.toString())
+        }
+        viewModel.num1.observe(this, n1Observer)
+
+        val n2Observer = Observer<Int> { state ->
+            number2.setText(state.toString())
+        }
+        viewModel.num2.observe(this, n2Observer)
+
+
         savedInstanceState?.let {
             opResult = savedInstanceState.getInt("ANSWER")
             answer.text = opResult.toString()
@@ -63,6 +103,8 @@ class MainActivity : AppCompatActivity() {
                 "mult" -> mult(number1.text.toString(), number2.text.toString())
                 else -> add(number1.text.toString(), number2.text.toString())
             }
+            viewModel.num1.value = number1.text.toString().toInt()
+            viewModel.num2.value = number2.text.toString().toInt()
 
             // TODO: show result on the screen
             answer.text = opResult.toString()
@@ -74,15 +116,6 @@ class MainActivity : AppCompatActivity() {
         outState.putInt("ANSWER", opResult)
         Log.i("LIFECYCLE", "saveInstanceState $opResult")
     }
-
-    /* alternative approach
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        opResult = savedInstanceState.getInt("ANSWER")
-        val answer = findViewById<TextView>(R.id.answer)
-        answer.text = opResult.toString()
-        Log.i("LIFECYCLE", "restoreInstanceState $opResult")
-    }*/
 
     // adds two numbers together
     private fun add(number1: String, number2: String) = number1.toInt() + number2.toInt()
@@ -106,4 +139,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+}
+
+class NumbersViewModel: ViewModel() {
+    val num1: MutableLiveData<Int> by lazy {
+        MutableLiveData<Int>(0)
+    }
+
+    val num2: MutableLiveData<Int> by lazy {
+        MutableLiveData<Int>(0)
+    }
+
 }
